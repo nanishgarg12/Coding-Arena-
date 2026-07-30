@@ -1,0 +1,19 @@
+{
+  "name": "codearena",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI powered real-time competitive coding battle platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "install:all": "npm install --workspaces",
+    "seed": "npm run seed --workspace backend",
+    "start": "npm run start --workspace backend"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
