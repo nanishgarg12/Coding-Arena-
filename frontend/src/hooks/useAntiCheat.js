@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { battleApi } from "../services/api.js";
 
-const eventMap = {
-  blur:        "WINDOW_BLUR",
-  copy:        "COPY",
-  paste:       "PASTE",
-  contextmenu: "RIGHT_CLICK",
-};
-
 export function useAntiCheat(roomCode, active = true) {
   const [violations, setViolations] = useState([]);
   const [showWarning, setShowWarning] = useState(false);
@@ -17,26 +10,24 @@ export function useAntiCheat(roomCode, active = true) {
 
   const log = useCallback(
     async (type, metadata = {}) => {
-      if (!active || !roomCode || lock.current) return;
+      if (!active || !roomCode || lock.current || roomCode === "demo") return;
       lock.current = true;
       try {
         const { data } = await battleApi.violation(roomCode, { type, metadata });
         const newLog = data.log;
-        setViolations((items) => [newLog, ...items].slice(0, 6));
+        setViolations((prev) => [newLog, ...prev].slice(0, 6));
 
-        // Show toast warning
         setShowWarning(true);
         clearTimeout(warningTimeout.current);
         warningTimeout.current = setTimeout(() => setShowWarning(false), 4000);
 
-        // Check disqualification
         if (newLog.severity === "disqualified") {
           setDisqualified(true);
         }
       } catch {
-        // Silently fail in demo mode
+        // Silently fail — network errors should not crash the editor
       } finally {
-        setTimeout(() => { lock.current = false; }, 1000);
+        setTimeout(() => { lock.current = false; }, 1500);
       }
     },
     [active, roomCode]
@@ -46,7 +37,9 @@ export function useAntiCheat(roomCode, active = true) {
     if (!active) return undefined;
 
     const onVisibility = () => {
-      if (document.hidden) log("TAB_SWITCH", { timestamp: new Date().toISOString() });
+      if (document.hidden) {
+        log("TAB_SWITCH", { timestamp: new Date().toISOString() });
+      }
     };
 
     const onFullscreen = () => {
@@ -55,14 +48,20 @@ export function useAntiCheat(roomCode, active = true) {
       }
     };
 
+    const onBlur = () => log("WINDOW_BLUR", { timestamp: new Date().toISOString() });
+
     const prevent = (event) => {
       event.preventDefault();
-      const type = eventMap[event.type];
+      const typeMap = {
+        copy: "COPY",
+        paste: "PASTE",
+        contextmenu: "RIGHT_CLICK",
+      };
+      const type = typeMap[event.type];
       if (type) log(type);
     };
 
     const preventKey = (event) => {
-      // Disable common cheat shortcuts: Ctrl+C, Ctrl+V, Ctrl+A, Ctrl+U, F12
       if (
         (event.ctrlKey && ["c", "v", "a", "u"].includes(event.key.toLowerCase())) ||
         event.key === "F12"
@@ -75,7 +74,7 @@ export function useAntiCheat(roomCode, active = true) {
 
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("fullscreenchange", onFullscreen);
-    window.addEventListener("blur", () => log("WINDOW_BLUR"));
+    window.addEventListener("blur", onBlur);
     ["copy", "paste", "contextmenu"].forEach((e) =>
       document.addEventListener(e, prevent)
     );
@@ -84,10 +83,12 @@ export function useAntiCheat(roomCode, active = true) {
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("fullscreenchange", onFullscreen);
+      window.removeEventListener("blur", onBlur); // ← Fixed: was never removed before
       ["copy", "paste", "contextmenu"].forEach((e) =>
         document.removeEventListener(e, prevent)
       );
       document.removeEventListener("keydown", preventKey);
+      clearTimeout(warningTimeout.current);
     };
   }, [active, log]);
 

@@ -33,6 +33,7 @@ export default function BattlesPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState({ diff: "All", type: "All" });
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   async function fetchBattles() {
@@ -51,17 +52,24 @@ export default function BattlesPage() {
 
   async function createBattle() {
     setLoading(true);
+    setError(null);
     try {
       const { data } = await battleApi.create(settings);
       navigate(`/lobby/${data.battle.roomCode}`);
-    } catch { setLoading(false); }
+    } catch (err) {
+      setError(err?.response?.data?.message ?? "Failed to create battle. Please try again.");
+      setLoading(false);
+    }
   }
 
   async function join(roomCode) {
+    setError(null);
     try {
       await battleApi.join(roomCode);
       navigate(`/lobby/${roomCode}`);
-    } catch {}
+    } catch (err) {
+      setError(err?.response?.data?.message ?? `Could not join room ${roomCode}.`);
+    }
   }
 
   async function joinPrivate() {
@@ -77,6 +85,13 @@ export default function BattlesPage() {
 
   return (
     <section>
+      {/* Error toast */}
+      {error && (
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-arena-red/30 bg-arena-red/10 px-4 py-3 text-sm text-arena-red">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-4 text-xs opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
       {/* Header */}
       <div className="mb-7">
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-arena-red">Live Battle Arena</p>

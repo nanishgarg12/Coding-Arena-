@@ -8,22 +8,31 @@ import { registerBattleSocket } from "./socket/battleSocket.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true
-  }
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      CLIENT_URL,
+    ],
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
+  transports: ["websocket", "polling"],
 });
 
 app.set("io", io);
 registerBattleSocket(io);
 
-// Connect DB (non-blocking — server starts regardless)
+// Connect DB (non-blocking)
 connectDB();
 
-server.listen(PORT, () => {
-  console.log(`\n⚔️  CodeArena API listening on port ${PORT}`);
-  console.log(`   Frontend: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
-  console.log(`   Health:   http://localhost:${PORT}/health\n`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n⚔️  CodeArena API running on port ${PORT}`);
+  console.log(`   Allowed origin: ${CLIENT_URL}`);
+  console.log(`   Health: http://localhost:${PORT}/health\n`);
 });
