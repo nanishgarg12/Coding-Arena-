@@ -1,0 +1,28 @@
+services:
+  - type: web
+    runtime: node
+    name: codearena-api
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JUDGE0_URL
+        value: https://judge0-ce.p.rapidapi.com
+      - key: JUDGE0_KEY
+        sync: false
+      - key: AI_PROVIDER_URL
+        sync: false
+      - key: AI_PROVIDER_KEY
+        sync: false

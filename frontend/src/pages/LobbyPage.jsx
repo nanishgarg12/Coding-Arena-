@@ -18,7 +18,7 @@ export default function LobbyPage() {
   const [ready, setReady] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
-  const [countdownValue, setCountdownValue] = useState(null);
+  const [countdownValue, setCountdownValue] = useState(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -86,6 +86,7 @@ export default function LobbyPage() {
 
   async function startBattle() {
     if (!allReady) return;
+    setCountdownValue(undefined);
     socket.emit("battle:start", {
       roomCode,
       durationMinutes: battle?.durationMinutes ?? 30,
