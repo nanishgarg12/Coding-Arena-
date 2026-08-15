@@ -9,6 +9,10 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const clientOrigins = CLIENT_URL
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const server = http.createServer(app);
 
@@ -17,7 +21,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
-      CLIENT_URL,
+      ...clientOrigins,
     ],
     credentials: true,
     methods: ["GET", "POST"],
